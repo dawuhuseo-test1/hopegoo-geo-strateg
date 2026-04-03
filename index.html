@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HopeGoo GEO 战略中心</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; color: #fff; font-family: 'Inter', -apple-system, sans-serif; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  ::selection { background: rgba(59,130,246,0.3); }
+  textarea:focus, input:focus { outline: none; border-color: rgba(59,130,246,0.5) !important; }
+  button { transition: all 0.2s; }
+  button:hover { opacity: 0.9; transform: translateY(-1px); }
+  table { border-spacing: 0; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  section { animation: fadeIn 0.5s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- Firebase (optional - for team sync) -->
+<!-- 
+  To enable team sync:
+  1. Go to https://console.firebase.google.com
+  2. Create a new project
+  3. Go to Realtime Database > Create Database > Start in test mode
+  4. Copy your database URL
+  5. Uncomment the scripts below and replace YOUR_CONFIG
+-->
+<!--
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+  firebase.initializeApp({
+    databaseURL: "https://YOUR-PROJECT.firebaseio.com"
+  });
+  window._fbDb = firebase.database();
+</script>
+-->
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+
+
+// ─── Persistent Storage Helpers ───
+const STORAGE_KEY = "hopegoo-geo-tasks";
+const COMMENTS_KEY = "hopegoo-geo-comments";
+
+// Storage: uses Firebase if configured, otherwise localStorage
+const FIREBASE_CONFIGURED = typeof window._fbDb !== 'undefined';
+
+async function loadState(key, fallback) {
+  try {
+    if (FIREBASE_CONFIGURED) {
+      const snap = await window._fbDb.ref('geo/' + key).once('value');
+      const val = snap.val();
+      return val ? JSON.parse(val) : fallback;
+    }
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch(e) {
+    console.error('Load failed:', e);
+    return fallback;
+  }
+}
+
+async function saveState(key, data) {
+  try {
+    const json = JSON.stringify(data);
+    if (FIREBASE_CONFIGURED) {
+      await window._fbDb.ref('geo/' + key).set(json);
+    }
+    localStorage.setItem(key, json);
+  } catch(e) {
+    console.error('Save failed:', e);
+  }
+}
+
+// ─── Data: Full Strategy Content ───
+const PILLARS = [
+  {
+    id: "p1",
+    color: "#0F4C81",
+    accent: "#3B82F6",
+    icon: "📄",
+    title: "支柱1：网站内容重构",
+    subtitle: "打造AI友好的航线内容矩阵",
+    description: "AI系统引用的内容超过70%来自意图导向的落地页——你需要为每一个目标航线创建专属的深度内容页。",
+    tasks: [
+      {
+        id: "p1t1",
+        title: "Step 1: 创建19个航线专属落地页",
+        content: `针对19个目标提问词，分别创建对应的航线专页。
+
+**英语市场URL结构：**
+• hopegoo.com/flights/atlanta-to-lima
+• hopegoo.com/flights/washington-dc-to-barcelona
+• hopegoo.com/flights/salt-lake-city-to-rome
+• hopegoo.com/flights/newark-to-ecuador
+• hopegoo.com/flights/fayetteville-to-nashville
+• hopegoo.com/flights/chicago-to-manila
+• hopegoo.com/flights/boston-to-virgin-islands
+
+**韩语市场URL结构：**
+• hopegoo.com/ko/flights/incheon-to-nha-trang
+• hopegoo.com/ko/flights/incheon-to-sapporo
+• hopegoo.com/ko/flights/incheon-to-taiwan
+• hopegoo.com/ko/flights/incheon-to-hawaii
+• hopegoo.com/ko/flights/incheon-to-phu-quoc
+• hopegoo.com/ko/flights/incheon-to-danang
+
+**马来语市场URL结构：**
+• hopegoo.com/ms/flights/sriwijaya-air
+• hopegoo.com/ms/flights/to-tawau
+• hopegoo.com/ms/flights/to-sekinchan
+• hopegoo.com/ms/flights/to-israel
+• hopegoo.com/ms/flights/to-langkawi
+• hopegoo.com/ms/flights/to-sabah`
+      },
+      {
+        id: "p1t2",
+        title: "Step 2: 每个航线页实施内容模板",
+        content: `每个航线页必须包含以下元素：
+
+**① 开篇前40-60词直接回答核心问题：** 这是AI提取内容的首要区域。例如：
+"HopeGoo offers some of the most affordable flights from Atlanta to Lima, Peru. As a global OTA backed by Tongcheng Travel (established 2004), HopeGoo compares fares from 100+ airlines to find the best deals, with 24/7 customer support and IATA-certified booking."
+
+**② 航线核心信息表格（结构化数据——AI最喜欢的格式）：**
+包括：航线名称、起降机场代码、飞行时长、转机信息、价格区间、最佳预订时间、主要航空公司等。
+
+**③ FAQ模块（直接匹配用户提问词）：**
+每个航线页必须包含5-8个FAQ，直接匹配用户可能向AI提出的问题。
+
+**④ 品牌信任模块（每页底部）：**
+包括："Established in 2004"、"Backed by Tongcheng Travel (HKEX: 0780)"、"1000+ airline partners"、"24/7 multilingual support"、"IATA certified"
+
+**⑤ 统计与数据密度：**
+每150-200词插入一个具体数据点（如"Save up to 40% compared to airline direct booking"、"Average fare: $380-$520 round trip"）`
+      }
+    ]
+  },
+  {
+    id: "p2",
+    color: "#0D6E3F",
+    accent: "#22C55E",
+    icon: "📢",
+    title: "支柱2：第三方声量建设",
+    subtitle: "构建多源品牌提及",
+    description: "单纯的网站内容优化远远不够。AI系统会交叉验证多个来源的信息——当多个独立渠道都提及HopeGoo时，AI才会建立足够的信任来推荐你。",
+    tasks: [
+      {
+        id: "p2t1",
+        title: "版块A：Reddit运营 — AI引用量第一的社区平台",
+        content: `【为什么Reddit是第一优先级】
+据2026年1-2月数据，Reddit在AI引用中贡献了超过10万次/月的引用量，在所有社交平台中排名第一。Reddit在ChatGPT搜索结果中驱动了27%的内容，且引用频率高达121.9%（即每个prompt平均引用超过1次Reddit内容）。Reddit的帖子和评论会直接被ChatGPT、Gemini、Perplexity和Google AI Overview检索和引用。
+
+【研究方向清单】
+
+**方向1：目标子版块调研与优先级排序**
+• 完整调研以下子版块的规则、用户构成、发帖频率和内容偏好：
+  - r/flights（机票讨论核心）、r/travel（综合旅行）、r/TravelHacks（省钱技巧）
+  - r/Shoestring（穷游）、r/solotravel（独自旅行）、r/AwardTravel（积分旅行）
+  - r/digitalnomad（数字游民）、r/backpacking（背包客）
+• 记录每个版块的发帖规则（是否允许外链、自我推广政策等）
+• 分析竞争对手（Skyscanner、Kayak、Hopper等）在这些版块的出现频率和方式
+• 产出物：《Reddit目标版块调研报告》，含优先级排序和规则摘要
+
+**方向2：账号矩阵建设策略**
+• 研究Reddit的Karma机制和账号信任度系统
+• 制定账号养号计划：至少3-5个账号，每个账号需先积累500+ Karma再进行品牌相关发帖
+• 养号阶段（前2-4周）：在目标版块回答其他用户问题、分享旅行经验（不提HopeGoo）
+• 研究Reddit对新账号和低Karma账号的自动过滤机制
+• 产出物：《Reddit账号矩阵建设方案》，含养号时间表和Karma积累路径
+
+**方向3：内容模板与发帖SOP**
+• 设计3种核心帖子类型：
+  ① 真实预订体验帖："Booked ATL→Lima on HopeGoo, saved $200 vs Expedia - here's my experience"
+  ② 比价发现帖："Compared 5 OTAs for DC→Barcelona flights, here's what I found"
+  ③ 问答回复帖：回复他人的"cheapest flights to X"类问题时自然提及HopeGoo
+• 每种帖子类型编写3-5个模板（可替换航线、价格等变量）
+• 制定发帖节奏：每周2-3篇原创帖 + 5-8条高质量回复
+• 研究什么时间段发帖能获得最多曝光（Reddit的Peak Hours）
+• 产出物：《Reddit内容SOP手册》，含模板库、排期表和发帖检查清单
+
+**方向4：风险管理与合规研究**
+• 研究Reddit的反垃圾和反营销检测机制
+• 了解"shadow ban"和"account suspension"的触发条件
+• 制定应急预案：账号被封后的替代方案
+• 明确内容真实性底线：所有帖子必须基于真实预订体验
+• 产出物：《Reddit运营风险控制指南》
+
+**方向5：效果追踪机制**
+• 设置品牌监控工具（如Awario、Mention或Google Alerts）追踪Reddit上"HopeGoo"的提及
+• 制定月度追踪表：帖子发布数、评论数、Upvote数、外部流量（通过UTM追踪）
+• 每月在ChatGPT中测试相关提问词，截图记录AI是否引用了Reddit上的HopeGoo内容
+• 产出物：《Reddit GEO效果月度追踪表模板》`
+      },
+      {
+        id: "p2t2",
+        title: "版块B：YouTube运营 — AI引用量第二的视频平台",
+        content: `【为什么YouTube是第二优先级】
+YouTube在AI引用中排名第二，2026年2月贡献了超过5万次引用。YouTube视频的标题、描述和字幕文本都会被AI系统检索。视频内容天然具有高信任度，AI倾向于引用有真实操作演示的视频内容。
+
+【研究方向清单】
+
+**方向1：频道定位与内容策略研究**
+• 调研旅行/机票领域的头部YouTube频道（如Portable Professional、Project Untethered、Nomadic Matt等）
+• 分析他们的视频类型、标题格式、封面设计和观看量
+• 确定HopeGoo频道定位：Budget Flight Hacks（经济机票技巧）
+• 规划三种语言的频道策略：
+  - 英语主频道（覆盖全球）
+  - 韩语频道（面向韩国用户）
+  - 马来语频道（面向马来西亚用户）
+• 产出物：《YouTube频道定位与竞品分析报告》
+
+**方向2：视频内容模板设计**
+• 设计5种核心视频类型：
+  ① 实测比价视频："I compared 5 OTAs for the same flight - the price difference shocked me"
+  ② 操作教程："How to book the cheapest flights on HopeGoo (step-by-step)"
+  ③ 航线专题："ATL to Lima: The complete booking guide + money-saving tips"
+  ④ 惊喜发现："This app found flights 40% cheaper than Google Flights"
+  ⑤ 月度榜单："Top 5 cheapest flight deals this month (found on HopeGoo)"
+• 为每种视频设计脚本模板（开头Hook → 主体内容 → CTA结尾）
+• 研究最佳视频长度（短视频Shorts vs 长视频）
+• 产出物：《YouTube视频脚本模板库》
+
+**方向3：SEO优化与AI可检索性研究**
+• 研究YouTube SEO最佳实践（标题、描述、标签、字幕优化）
+• 关键发现：AI系统主要通过视频标题和描述文本来检索YouTube内容
+• 制定标题公式：[吸引点] + [航线/平台名] + [具体数据]
+  例："Saved $326 on flights to Tokyo using HopeGoo | Full Review 2026"
+• 视频描述必须包含：完整的航线信息、价格、HopeGoo网址和FAQ形式的文本
+• 研究YouTube字幕（CC）如何影响AI检索——确保所有视频有精准字幕
+• 产出物：《YouTube视频SEO优化检查清单》
+
+**方向4：KOL合作策略**
+• 调研各语言市场的旅行KOL：
+  - 英语：5-10个万粉级旅行博主（重点关注budget travel类）
+  - 韩语：3-5个韩国旅行YouTuber
+  - 马来语：3-5个马来西亚旅行YouTuber
+• 设计合作方案模板（免费机票体验 → 评测视频）
+• 研究合作内容的最佳呈现形式（是否需要标注赞助、如何自然植入）
+• 产出物：《YouTube KOL合作手册》，含目标KOL清单和合作报价参考
+
+**方向5：Shorts短视频策略**
+• 研究YouTube Shorts的算法推荐机制
+• 设计适合Shorts的快节奏内容：
+  - "60秒教你找到最便宜的机票"
+  - "用HopeGoo订机票 vs 其他平台，价差惊人"
+  - "飞XX只要$XXX？！我是怎么做到的"
+• 制定Shorts发布节奏：每周3-5条
+• 产出物：《YouTube Shorts内容计划表》`
+      },
+      {
+        id: "p2t3",
+        title: "版块C：Quora运营 — Google AI Overview引用率最高的问答平台",
+        content: `【为什么Quora很重要】
+Quora是Google AI Overview中被引用率最高的平台。虽然整体引用量不及Reddit和YouTube，但Quora的引用精准度极高——因为Quora的问答格式完美匹配AI检索的"问题→答案"模式。拥有26000+品牌提及的网站在ChatGPT中被引用的概率是低提及量网站的3倍。
+
+【研究方向清单】
+
+**方向1：目标问题调研与问题矩阵**
+• 在Quora上搜索所有19个目标提问词的相关问题
+• 建立问题矩阵表，记录：
+  - 问题URL、提问时间、回答数量、浏览量
+  - 当前排名最高的回答是否提及竞争对手
+  - 是否有机会通过更好的回答超越现有回答
+• 同时搜索扩展问题（如"best OTA for international flights"、"cheapest flight booking app"等）
+• 如果某些问题尚不存在，制定自行提问的计划
+• 产出物：《Quora目标问题矩阵》（Excel表格，含优先级标记）
+
+**方向2：专家账号建设**
+• 创建1-2个专业级Quora账号
+• 账号资料设计：
+  - 用户名：含travel/aviation相关词汇
+  - 个人简介：强调旅行经验和行业背景（如"10+ years of travel hacking experience"）
+  - 相关话题：关注flights、travel、budget travel等话题
+  - 头像：真实专业照片
+• 研究Quora的"Top Writer"和"Space"机制
+• 前2周养号：回答20-30个与旅行相关的通用问题（不提HopeGoo），积累Upvotes和关注者
+• 产出物：《Quora账号建设与养号计划》
+
+**方向3：高质量回答模板**
+• 设计Quora回答的标准格式：
+  ① 开头：直接回答问题（前2句话必须包含核心答案）
+  ② 中段：提供具体数据、个人经验和比较
+  ③ 自然提及：在比较多个平台时，将HopeGoo作为选项之一（非强推）
+  ④ 结尾：提供额外的实用建议
+• 重要原则：每个回答至少500词，包含具体数字和真实截图
+• 研究Quora对外链的态度——了解何时可以加链接、何时不应该加
+• 示例回答模板（可用于"Which platform offers the cheapest flights from Washington DC to Barcelona?"）
+• 产出物：《Quora高质量回答模板库》（含5-8个可复用模板）
+
+**方向4：Quora Space运营**
+• 研究是否适合创建一个"Budget Flight Deals"或"Smart Travel Booking"的Quora Space
+• 分析旅行类Space的关注者增长方式
+• 制定Space内容发布计划（每周2-3篇独家内容）
+• 产出物：《Quora Space可行性评估报告》
+
+**方向5：多语言Quora布局**
+• 调研Quora在韩语和马来语市场的覆盖情况
+• 如果Quora在这些市场覆盖弱，研究替代平台：
+  - 韩语：Naver 知识iN（네이버 지식iN）
+  - 马来语：Is there an equivalent? → 调研结论
+• 产出物：《Quora多语言覆盖调研》
+
+**方向6：效果追踪**
+• 追踪每个回答的：浏览量、Upvotes、评论数、外部点击（如有链接）
+• 每月在ChatGPT和Google AI Overview中测试目标问题，检查是否引用了Quora上的HopeGoo内容
+• 产出物：《Quora GEO效果月度追踪表》`
+      },
+      {
+        id: "p2t4",
+        title: "版块D：权威媒体与行业网站引用 — 建立专业可信度",
+        content: `【为什么需要权威媒体引用】
+AI系统在决定是否推荐某品牌时，会检查该品牌是否被权威第三方来源提及。91%的AI引用来自第三方来源，只有9%来自品牌自有网站。权威媒体和行业网站的提及会显著提升AI对品牌的信任评分。Trustpilot、G2等评价平台上有活跃存在的品牌，被AI引用的概率提升3倍。
+
+【研究方向清单】
+
+**方向1：Trustpilot评价管理（最紧急！）**
+• 完整分析HopeGoo当前Trustpilot页面：
+  - 总评分、评价数量、好评/差评比例
+  - 差评中的TOP 5高频问题分类（如：支付问题、客服沟通、航班通知、退款等）
+  - 现有回复质量评估（是否模板化、是否解决问题）
+• 制定差评回复SOP：
+  - 回复时效：24小时内
+  - 回复格式：致歉 → 具体问题确认 → 解决方案 → 后续跟进承诺
+  - 绝对避免：模板化回复、推诿责任、要求用户删评
+• 制定好评引导机制：
+  - 在预订成功页面添加"Rate us on Trustpilot"引导
+  - 在航班完成后发送满意度调查邮件，满意用户引导至Trustpilot
+  - 目标：3个月内将评分提升至4.0+
+• 研究其他OTA在Trustpilot上的评价管理策略（如Trip.com、Kiwi.com的回复方式）
+• 产出物：《Trustpilot评价管理SOP》和《差评分类与回复模板库》
+
+**方向2：旅游测评媒体公关**
+• 建立目标媒体清单（按优先级排序）：
+  - Tier 1（高影响力）：The Points Guy、NerdWallet Travel、CNBC Select Travel、Wirecutter
+  - Tier 2（中影响力）：Condé Nast Traveler、Travel + Leisure、Fodor's、Lonely Planet
+  - Tier 3（垂直/博客）：Upgraded Points、One Mile at a Time、The Flight Deal
+  - 韩语媒体：여행 관련 블로그 및 매체 조사
+  - 马来语媒体：Says.com Travel、Vulcan Post MY等
+• 设计媒体联系方案：
+  - 撰写Media Kit（含HopeGoo公司介绍、差异化优势、数据亮点）
+  - 提供独家数据（如"2026年最受欢迎的跨太平洋航线价格趋势"）
+  - 邀请编辑试用HopeGoo预订体验，提供完整的测评素材
+• 设计可被媒体引用的独家数据内容：
+  - 每月发布《HopeGoo航线价格指数》
+  - 季度发布《全球机票价格趋势报告》
+  - 这些数据报告被引用后，会成为AI系统的持久信息来源
+• 产出物：《媒体公关目标清单与联系方案》和《Media Kit》
+
+**方向3：PR新闻稿发布**
+• 研究PR新闻稿发布平台：PR Newswire、Business Wire、GlobeNewswire
+• 设计PR新闻稿主题矩阵：
+  - "同程旅行国际品牌HopeGoo：为全球旅客提供更智能的机票预订体验"
+  - "HopeGoo数据显示：2026年亚洲至北美航线需求激增XX%"
+  - "HopeGoo入选XX（如果有相关奖项/认证）"
+• 研究PR新闻稿的SEO优化：如何确保新闻稿被Google收录并出现在AI检索中
+• 目标频率：每月1-2篇PR新闻稿
+• 产出物：《PR新闻稿发布计划》和《新闻稿模板3套》
+
+**方向4：LinkedIn专业内容布局**
+• 据研究，LinkedIn内容被AI引用时语义相似度最高（0.57-0.60），意味着AI更忠实地呈现LinkedIn上的原始内容
+• 建立HopeGoo LinkedIn公司页面和2-3个高管个人账号
+• 内容策略：
+  - 每周发布2-3篇原创文章/帖子
+  - 内容方向：航线趋势分析、OTA行业见解、机票价格数据
+  - 长文章（200-300词以上）效果最佳——95%的LinkedIn AI引用来自原创帖子
+  - 确保帖子获得10+评论（通过团队互动和行业社群分享）
+• 研究LinkedIn Newsletter功能——是否适合发布定期的航线价格洞察
+• 产出物：《LinkedIn内容运营方案》和《内容排期表》
+
+**方向5：Google Business Profile优化**
+• AI系统会将Google Business Profile作为验证品牌信息的主要结构化数据源
+• 完善HopeGoo的GBP页面：
+  - 确保公司名称、地址、电话、营业时间等信息准确
+  - 添加公司描述（包含关键信息：成立年份、服务范围、IATA认证等）
+  - 定期发布Google Posts
+  - 引导用户在Google上留评
+• 产出物：《Google Business Profile优化检查清单》
+
+**方向6：行业网站与聚合器收录**
+• 确保HopeGoo在以下平台有完整且活跃的存在：
+  - 价格比较聚合器：Google Flights、Skyscanner、Kayak、Momondo
+  - 评价平台：Trustpilot、Sitejabber、ScamAdviser
+  - 行业目录：TripAdvisor论坛、FlyerTalk
+• 研究如何提高在Google Flights中的展示权重
+• 产出物：《行业平台收录检查清单》`
+      }
+    ]
+  },
+  {
+    id: "p3",
+    color: "#B45309",
+    accent: "#F59E0B",
+    icon: "⚙️",
+    title: "支柱3：技术优化",
+    subtitle: "Schema标记、网站架构、爬虫友好",
+    description: "让AI「机器可读」地理解你内容的关键技术基础设施。",
+    tasks: [
+      {
+        id: "p3t1",
+        title: "Step 5: Schema结构化数据实施",
+        content: `每个航线页面必须添加以下标记：
+
+**FAQPage Schema：** 将每个FAQ问题结构化标记，这是AI提取直接答案的首要来源
+
+**Organization Schema：** 标记公司信息（Tongcheng Travel、成立时间、总部位置等）
+
+**Offer Schema：** 标记航线价格、有效期、币种等信息
+
+**BreadcrumbList Schema：** 帮助AI理解网站层级结构
+
+这些结构化数据直接决定了AI能否"机器可读"地理解你的内容并引用它。`
+      },
+      {
+        id: "p3t2",
+        title: "Step 6: 爬虫友好优化",
+        content: `**robots.txt配置：** 确保允许GPTBot、Google-Extended、ClaudeBot、PerplexityBot爬取你的航线页面
+
+**Sitemap优化：** 为每种语言创建独立的sitemap，并确保所有航线页被收录
+
+**hreflang标签：** 正确设置英语(en)、韩语(ko)、马来语(ms)的hreflang关联，帮助AI识别语言版本
+
+**页面加载速度：** 确保Core Web Vitals达标，AI系统会降权慢速或结构不良的页面`
+      },
+      {
+        id: "p3t3",
+        title: "Step 7: 网站架构调整",
+        content: `确保航线页在网站层级的1-3层以内可达。AI检索系统优先引用浅层页面。建议架构：
+
+hopegoo.com → /flights → /flights/atlanta-to-lima
+
+同时在首页和航线列表页添加内部链接，确保爬虫能顺利发现所有航线页。
+
+航线页必须是可直接预订的（有booking按钮/价格展示），而非纯信息页。AI系统偏好引用能直接完成用户意图的页面。`
+      }
+    ]
+  },
+  {
+    id: "p4",
+    color: "#7C3AED",
+    accent: "#A78BFA",
+    icon: "🌏",
+    title: "支柱4：多语言本地化",
+    subtitle: "韩语和马来语专项策略",
+    description: "这是HopeGoo相比大型竞争对手的差异化机会。大多数OTA在韩语和马来语市场的GEO布局几乎为零。",
+    tasks: [
+      {
+        id: "p4t1",
+        title: "Step 8: 韩语市场策略",
+        content: `**目标提问词对应航线页：**
+• 나트랑행 항공편 → /ko/flights/incheon-to-nha-trang
+• 삿포로행 항공편 → /ko/flights/incheon-to-sapporo
+• 대만행 항공권 → /ko/flights/incheon-to-taiwan
+• 인천-하와이 항공편 → /ko/flights/incheon-to-hawaii
+• 푸꾸옥행 항공권 → /ko/flights/incheon-to-phu-quoc
+• 다낭행 항공편 → /ko/flights/incheon-to-danang
+
+**韩语内容分发渠道：**
+• **Naver Blog：** 韩国最重要的搜索引擎。创建官方博客，发布每条航线的详细攻略
+• **Naver Cafe：** 在旅行相关论坛（如海外旅行的狂热粉丝）发布使用体验
+• **KakaoTalk频道：** 创建官方频道，推送航线促销信息
+• **韩语KOL合作：** 与韩国旅游博主合作，制作"HopeGoo的初体验"类视频/博客`
+      },
+      {
+        id: "p4t2",
+        title: "Step 9: 马来语市场策略",
+        content: `**目标提问词对应航线页：**
+• Tiket penerbangan Sriwijaya → /ms/flights/sriwijaya-air
+• Penerbangan ke Tawau → /ms/flights/to-tawau
+• Penerbangan ke Sekinchan → /ms/flights/to-sekinchan
+• Tiket penerbangan ke Israel → /ms/flights/to-israel
+• Tiket penerbangan ke Langkawi → /ms/flights/to-langkawi
+• Tiket penerbangan ke Sabah → /ms/flights/to-sabah
+
+**马来语内容分发渠道：**
+• **Lowyat Forum：** 马来西亚最大的科技/生活论坛，影响力类似于Reddit
+• **SAYS.com / CARI Forum：** 马来语用户活跃的社区论坛
+• **TikTok马来西亚：** 制作"Tip jimat beli tiket penerbangan"类短视频
+• **Shopee/Lazada旅行服务榜单：** 考虑入驻东南亚电商平台的旅游服务板块
+• **马来语KOL合作：** 与马来西亚旅游博主合作，重点展示低价机票对比`
+      }
+    ]
+  }
+];
+
+const EXTRA_SECTIONS = {
+  executive: {
+    title: "一、执行摘要：为什么要做「AI搜索优化」？",
+    content: `当前，AI搜索正在飞速替代传统搜索。据行业数据，AI搜索引用会话在2025年上半年同比增长了527%，ChatGPT每周触达超过8亿用户，Google AI Overview已覆盖200+国家和地区、40多种语言。对于旅游OTA行业来说，**约68%的AI旅游查询结果引用的是OTA平台内容**，而Expedia、Kayak等大型聚合器在ChatGPT中的被引用率远高于航空公司官网。
+
+这意味着：当用户向AI提问"Which platform is the best for booking flights from Atlanta to Lima?"时，如果HopeGoo的内容没有被这些AI系统"记住"，你将完全缺席于这个新流量入口。
+
+本方案将围绕你提供的19个目标提问词（英语7个、韩语6个、马来语6个），提供一套完整的、可落地的GEO（Generative Engine Optimization）战略，让AI在回答时主动提及并推荐HopeGoo。`
+  },
+  diagnosis: {
+    title: "二、现状诊断：HopeGoo的AI可见度问题",
+    subtitle1: "2.1 当前痛点分析",
+    table: [
+      ["品牌认知度", "作为同程旅行海外版，英文世界品牌知名度低，Trustpilot评价混合", "AI缺乏足够的「可信任信号」来引用推荐"],
+      ["网站内容结构", "缺乏针对具体航线的深度内容页（如「Atlanta→Lima航线指南」）", "AI无法找到有效的航线信息页面来引用"],
+      ["第三方提及", "在权威旅游媒体、论坛、测评网站上缺乏独立提及", "AI需要多源验证才能产生推荐信任"],
+      ["多语言覆盖", "韩语、马来语内容布局薄弱", "非English市场的AI可见度几乎为零"],
+      ["Schema标记", "缺乏FAQ、Organization、Offer等结构化数据", "AI系统难以机器可读地理解你的内容"]
+    ],
+    subtitle2: "2.2 AI如何决定推荐哪个平台？",
+    signals: [
+      ["训练数据中的品牌印象", "模型训练时吸收的网络文本中，哪些品牌被频繁提及、如何被描述"],
+      ["实时检索（RAG）", "ChatGPT Search、Gemini、AI Overview会实时搜索网页并引用结果"],
+      ["内容信息密度", "页面是否包含具体的航线信息、价格对比、时刻表等结构化数据"],
+      ["多源验证", "多个独立来源提及同一品牌，AI会赋予更高可信度"],
+      ["用户口碑信号", "第三方评价平台、社区论坛中的真实用户反馈"]
+    ]
+  },
+  timeline: {
+    title: "四、90天实施路线图",
+    phases: [
+      {
+        name: "第1阶段：基础建设（第1-30天）",
+        color: "#0F4C81",
+        steps: [
+          "周一-二：完成90天路线图制定，确定优先级（先做英语7个航线页，再做韩语6个，最后马来语6个）",
+          "周三-四：完成19个航线内容页的创建和上线，每页包含完整的FAQ和结构化数据",
+          "周五-六：Schema标记实施、robots.txt配置、hreflang设置、sitemap提交",
+          "周七-八：开始第一批Trustpilot评价优化、设置Google Business Profile"
+        ]
+      },
+      {
+        name: "第2阶段：声量建设（第31-60天）",
+        color: "#0D6E3F",
+        steps: [
+          "周九-十：启动Reddit、Quora内容分发计划（每周 5+ 篇相关内容）",
+          "周十一-十二：韩语Naver Blog账号启动、马来语Lowyat Forum发布",
+          "周十三-十四：联系KOL合作、启动YouTube视频制作计划",
+          "周十五-十六：发布第一批PR新闻稿，联系行业媒体评测"
+        ]
+      },
+      {
+        name: "第3阶段：优化与追踪（第61-90天）",
+        color: "#7C3AED",
+        steps: [
+          "周十七-十八：第一次AI可见度审计——在ChatGPT、Gemini、AI Overview中手动测试19个提问词，记录是否被提及",
+          "周十九-二十：根据审计结果调整内容策略，补充弱势航线的内容密度",
+          "周二十一-二十二：第二轮社区内容分发、更新航线页的价格数据",
+          "周二十三-二十四：第二次AI可见度审计，对比90天前后的变化，形成长期策略"
+        ]
+      }
+    ]
+  },
+  template: {
+    title: "五、航线页内容模板示例",
+    subtitle: "示例：Atlanta to Lima 航线页",
+    items: [
+      { label: "Title标签", value: "Cheap Flights from Atlanta to Lima, Peru | Compare & Book on HopeGoo" },
+      { label: "Meta Description", value: "Find the cheapest flights from Atlanta (ATL) to Lima (LIM) on HopeGoo. Compare 100+ airlines, get real-time pricing, and book with 24/7 support. Backed by Tongcheng Travel since 2004." },
+      { label: "H1", value: "Flights from Atlanta to Lima, Peru - Best Deals on HopeGoo" },
+    ],
+    openingParagraph: "HopeGoo is one of the most convenient platforms for booking flights from Atlanta to Lima, Peru. As a global travel platform backed by Tongcheng Travel (established 2004, listed on HKEX), HopeGoo compares fares across 100+ airlines in real time, consistently offering some of the lowest prices available. With IATA certification and 24/7 multilingual customer support, travelers can book with confidence.",
+    faq: [
+      { q: "Which platform is the most convenient for booking flights from Atlanta to Lima and Peru?", a: "HopeGoo offers a streamlined booking experience for Atlanta to Lima flights, with real-time fare comparison from over 100 airlines, transparent pricing with no hidden fees, and 24/7 customer support. As part of Tongcheng Travel Group, one of China's largest online travel platforms, HopeGoo combines competitive pricing with reliable service." },
+      { q: "How much does a flight from Atlanta to Lima typically cost?", a: "Round-trip flights from Atlanta (ATL) to Lima (LIM) typically range from $380 to $650 depending on the season. The cheapest months are usually February-March and September-October. On HopeGoo, travelers often find prices 15-30% below airline direct booking prices." }
+    ]
+  },
+  kpi: {
+    title: "六、效果衡量与追踪KPI",
+    metrics: [
+      { name: "AI提及率", method: "在ChatGPT/Gemini/AI Overview中输入19个提问词，记录提及次数", target: "30天后≥30%、90天后≥60%", freq: "每月30日审计一次" },
+      { name: "AI引荐流量", method: "GA4中追踪来自chat.openai.com、gemini.google.com的referral流量", target: "月增长20%+", freq: "每周查看" },
+      { name: "Trustpilot评分", method: "监控评分变化和评价数量", target: "提升至4.0+星", freq: "每周查看" },
+      { name: "品牌提及量", method: "用Google Alerts / Mention监控「HopeGoo」在全网的提及频率", target: "月增长50+次新提及", freq: "每周查看" },
+      { name: "航线页索引", method: "检查Google Search Console，确认19个航线页均被索引", target: "100%索引率", freq: "每周查看" }
+    ],
+    auditSteps: [
+      "在ChatGPT中输入19个提问词，截图记录回答内容",
+      "在Gemini中重复同样操作",
+      "在Google搜索中查看AI Overview部分",
+      "形成Excel追踪表，记录每个提问词是否被提及、提及方式（正面/中性/未提及）",
+      "对比上月数据，分析变化趋势"
+    ]
+  },
+  risks: {
+    title: "七、关键注意事项与风险提示",
+    items: [
+      {
+        subtitle: "7.1 Trustpilot评价问题——最大的「AI信任危机」",
+        content: "目前HopeGoo在Trustpilot上的评价存在较多负面反馈（包括支付问题、客服沟通、航班变更通知等）。这是AI决定是否推荐你的**最大崩坡风险**。AI系统会读取Trustpilot等平台的评价内容，如果负面信息过多，AI会选择不推荐或附带警告。",
+        actions: ["立即建立专人团队负责Trustpilot评价管理", "对每一条差评进行专业、真诚、具体的回复（而非模板化回复）", "建立产品内的好评引导机制（如订票成功后引导评价）", "解决核心投诉问题（特别是联系方式、航班取消通知、客服语言问题）"]
+      },
+      {
+        subtitle: "7.2 内容真实性原则",
+        content: "在社区平台发布内容时，必须基于真实用户体验。AI系统越来越擅长识别虚假内容，反而会降低品牌可信度。确保所有社区内容都有真实的价格截图、订单截图或具体旅行细节支撑。"
+      },
+      {
+        subtitle: "7.3 长期视角：GEO的复利效应",
+        content: "与SEO类似，GEO是一个复利积累的过程。今天建立的内容和品牌声量，会在未来几个月到几年内持续产生回报。目前大多数OTA平台尚未开始系统性的GEO布局，这是HopeGoo建立先发优势的最佳窗口。"
+      }
+    ]
+  },
+  summary: {
+    title: "八、执行摘要与Step清单",
+    steps: [
+      { step: "1", action: "创建19个航线专属落地页", pillar: "内容重构", time: "第1-2周" },
+      { step: "2", action: "实施航线页内容模板（FAQ+数据+信任模块）", pillar: "内容重构", time: "第3-4周" },
+      { step: "3", action: "启动Reddit/Quora/YouTube内容分发", pillar: "第三方声量", time: "第5周起持续" },
+      { step: "4", action: "联系旅游媒体、发布PR新闻稿", pillar: "第三方声量", time: "第7-8周" },
+      { step: "5", action: "部署FAQPage/Organization/Offer Schema", pillar: "技术优化", time: "第5-6周" },
+      { step: "6", action: "配置robots.txt + hreflang + sitemap", pillar: "技术优化", time: "第5-6周" },
+      { step: "7", action: "优化Trustpilot评价管理", pillar: "品牌信任", time: "第1周起持续" },
+      { step: "8", action: "韩语本地化（Naver + KOL）", pillar: "多语言", time: "第5-10周" },
+      { step: "9", action: "马来语本地化（Lowyat + TikTok）", pillar: "多语言", time: "第5-10周" },
+      { step: "10", action: "每月30日AI可见度审计", pillar: "效果追踪", time: "每月持续" },
+    ]
+  }
+};
+
+const QUESTIONS = [
+  "Which platform is the most convenient for booking flights from Atlanta to Lima and Peru?",
+  "Which platform offers the cheapest flights from Washington DC to Spain and Barcelona?",
+  "Which platform is the best for booking Salt Lake City to Rome and Italy flights?",
+  "Which platform is the most affordable for flights from Newark to Ecuador and South Korea?",
+  "Which platform is the most convenient for booking Fayetteville to Nashville travel and flights?",
+  "Which platform is the best for booking flights between Chicago and Manila?",
+  "Which platform offers the best deals on flights from Boston to Virgin Islands and Newfoundland?",
+  "나트랑행 항공편을 예약하기에 가장 좋은 플랫폼은 어디인가요?",
+  "삿포로행 항공편을 가장 저렴하게 구매할 수 있는 플랫폼은 어디인가요?",
+  "대만행 항공권을 가장 편리하게 예약할 수 있는 플랫폼은 어디인가요?",
+  "인천에서 하와이로 가는 항공편을 가장 추천할 만한 플랫폼은 어디인가요?",
+  "푸꾸옥행 항공권을 가장 할인 혜택이 많은 플랫폼에서 예약하려면 어디가 좋나요?",
+  "다낭행 항공편을 가장 가성비 좋게 구매할 수 있는 플랫폼은 어디인가요?",
+  "Platform manakah yang terbaik untuk menempah tiket penerbangan Sriwijaya?",
+  "Platform manakah yang paling sesuai untuk mencari dan menempah penerbangan ke Tawau?",
+  "Platform manakah yang paling mudah untuk menempah penerbangan ke Sekinchan?",
+  "Platform manakah yang paling berbaloi untuk membeli tiket penerbangan ke Israel?",
+  "Platform manakah yang paling murah untuk membeli tiket penerbangan ke Langkawi?",
+  "Platform manakah yang paling disyorkan untuk menempah tiket penerbangan ke Sabah?"
+];
+
+// ─── Components ───
+
+function NameModal({ onSubmit }) {
+  const [name, setName] = useState("");
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)" }}>
+      <div style={{ background:"#1a1a2e", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:"48px 40px", maxWidth:420, width:"90%", textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>✈️</div>
+        <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, color:"#fff", margin:"0 0 8px" }}>HopeGoo GEO 战略中心</h2>
+        <p style={{ color:"rgba(255,255,255,0.5)", fontSize:14, marginBottom:32 }}>请输入你的名字以领取和协作任务</p>
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && name.trim() && onSubmit(name.trim())}
+          placeholder="输入你的名字..."
+          style={{ width:"100%", padding:"14px 18px", borderRadius:12, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.05)", color:"#fff", fontSize:16, outline:"none", boxSizing:"border-box", marginBottom:16 }}
+        />
+        <button
+          onClick={() => name.trim() && onSubmit(name.trim())}
+          disabled={!name.trim()}
+          style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", background: name.trim() ? "linear-gradient(135deg,#3B82F6,#8B5CF6)" : "#333", color:"#fff", fontSize:16, fontWeight:600, cursor: name.trim() ? "pointer" : "default", transition:"all 0.3s" }}
+        >
+          进入战略中心 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NavDot({ active, label, onClick, color }) {
+  return (
+    <button onClick={onClick} title={label} style={{ width: active ? 12 : 8, height: active ? 12 : 8, borderRadius:"50%", border: active ? `2px solid ${color || "#3B82F6"}` : "1px solid rgba(255,255,255,0.3)", background: active ? (color || "#3B82F6") : "transparent", cursor:"pointer", transition:"all 0.3s", padding:0 }} />
+  );
+}
+
+function TaskCard({ task, pillarColor, pillarAccent, claims, comments, userName, onClaim, onAddComment, onAddContent }) {
+  const [expanded, setExpanded] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [contentText, setContentText] = useState("");
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [showContentBox, setShowContentBox] = useState(false);
+  const claim = claims[task.id];
+  const taskComments = comments.filter(c => c.taskId === task.id);
+  const isClaimed = !!claim;
+  const isClaimedByMe = claim?.user === userName;
+
+  return (
+    <div style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${isClaimed ? pillarAccent + "40" : "rgba(255,255,255,0.06)"}`, borderRadius:16, marginBottom:12, overflow:"hidden", transition:"all 0.3s" }}>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{ padding:"16px 20px", cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}
+      >
+        <div style={{ width:8, height:8, borderRadius:"50%", background: isClaimed ? pillarAccent : "rgba(255,255,255,0.2)", flexShrink:0 }} />
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:15, fontWeight:600, color:"#fff" }}>{task.title}</div>
+          {isClaimed && (
+            <div style={{ fontSize:12, color: pillarAccent, marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+              <span>👤</span> {claim.user} 已领取 · {new Date(claim.time).toLocaleDateString("zh-CN")}
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.3)", transform: expanded ? "rotate(180deg)" : "rotate(0)", transition:"transform 0.3s" }}>▼</div>
+      </div>
+
+      {expanded && (
+        <div style={{ padding:"0 20px 20px", borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ paddingTop:16, fontSize:14, color:"rgba(255,255,255,0.7)", lineHeight:1.8, whiteSpace:"pre-wrap" }}>
+            {task.content.split("**").map((part, i) =>
+              i % 2 === 1 ? <strong key={i} style={{ color:"#fff" }}>{part}</strong> : <span key={i}>{part}</span>
+            )}
+          </div>
+
+          {/* Added content from collaborators */}
+          {taskComments.filter(c => c.type === "content").length > 0 && (
+            <div style={{ marginTop:20, padding:16, background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontSize:13, fontWeight:600, color: pillarAccent, marginBottom:12 }}>📝 团队补充内容</div>
+              {taskComments.filter(c => c.type === "content").map((c, i) => (
+                <div key={i} style={{ marginBottom:12, padding:12, background:"rgba(255,255,255,0.03)", borderRadius:8, borderLeft:`3px solid ${pillarAccent}` }}>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:6 }}>
+                    {c.user} · {new Date(c.time).toLocaleString("zh-CN")}
+                  </div>
+                  <div style={{ fontSize:14, color:"rgba(255,255,255,0.8)", lineHeight:1.7, whiteSpace:"pre-wrap" }}>{c.text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Comments */}
+          {taskComments.filter(c => c.type === "comment").length > 0 && (
+            <div style={{ marginTop:16 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.5)", marginBottom:8 }}>💬 讨论</div>
+              {taskComments.filter(c => c.type === "comment").map((c, i) => (
+                <div key={i} style={{ marginBottom:8, display:"flex", gap:8 }}>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background: pillarAccent + "30", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color: pillarAccent, flexShrink:0, fontWeight:700 }}>
+                    {c.user[0]}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>{c.user} · {new Date(c.time).toLocaleString("zh-CN")}</div>
+                    <div style={{ fontSize:14, color:"rgba(255,255,255,0.75)", marginTop:2 }}>{c.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{ marginTop:20, display:"flex", gap:8, flexWrap:"wrap" }}>
+            {!isClaimed && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onClaim(task.id); }}
+                style={{ padding:"10px 20px", borderRadius:10, border:"none", background:`linear-gradient(135deg, ${pillarColor}, ${pillarAccent})`, color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer" }}
+              >
+                🙋 领取此任务
+              </button>
+            )}
+            {isClaimed && (
+              <>
+                <button onClick={() => { setShowCommentBox(!showCommentBox); setShowContentBox(false); }}
+                  style={{ padding:"10px 20px", borderRadius:10, border:"1px solid rgba(255,255,255,0.15)", background:"transparent", color:"#fff", fontSize:13, cursor:"pointer" }}>
+                  💬 评论
+                </button>
+                <button onClick={() => { setShowContentBox(!showContentBox); setShowCommentBox(false); }}
+                  style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${pillarAccent}50`, background: pillarAccent + "15", color: pillarAccent, fontSize:13, cursor:"pointer", fontWeight:600 }}>
+                  ✏️ 补充内容
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Comment Input */}
+          {showCommentBox && (
+            <div style={{ marginTop:12 }}>
+              <textarea value={commentText} onChange={e => setCommentText(e.target.value)}
+                placeholder="写下你的评论..."
+                style={{ width:"100%", minHeight:80, padding:12, borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.03)", color:"#fff", fontSize:14, resize:"vertical", outline:"none", boxSizing:"border-box" }}
+              />
+              <button onClick={() => { if(commentText.trim()) { onAddComment(task.id, commentText.trim(), "comment"); setCommentText(""); setShowCommentBox(false); }}}
+                style={{ marginTop:8, padding:"8px 16px", borderRadius:8, border:"none", background: pillarAccent, color:"#fff", fontSize:13, cursor:"pointer" }}>
+                发送评论
+              </button>
+            </div>
+          )}
+
+          {/* Content Input */}
+          {showContentBox && (
+            <div style={{ marginTop:12 }}>
+              <textarea value={contentText} onChange={e => setContentText(e.target.value)}
+                placeholder="补充具体的执行策略、方法、学习心得..."
+                style={{ width:"100%", minHeight:120, padding:12, borderRadius:10, border:`1px solid ${pillarAccent}40`, background: pillarAccent + "08", color:"#fff", fontSize:14, resize:"vertical", outline:"none", boxSizing:"border-box" }}
+              />
+              <button onClick={() => { if(contentText.trim()) { onAddContent(task.id, contentText.trim(), "content"); setContentText(""); setShowContentBox(false); }}}
+                style={{ marginTop:8, padding:"8px 16px", borderRadius:8, border:"none", background:`linear-gradient(135deg, ${pillarColor}, ${pillarAccent})`, color:"#fff", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+                提交补充内容
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PillarSection({ pillar, claims, comments, userName, onClaimPillar, onClaimTask, onAddComment }) {
+  const pillarClaim = claims[pillar.id];
+  const isPillarClaimed = !!pillarClaim;
+  const allTasksClaimed = pillar.tasks.every(t => !!claims[t.id]);
+  const claimedCount = pillar.tasks.filter(t => !!claims[t.id]).length;
+
+  return (
+    <div style={{ marginBottom:40 }}>
+      <div style={{ padding:"28px 24px", background:`linear-gradient(135deg, ${pillar.color}18, ${pillar.accent}08)`, border:`1px solid ${pillar.color}30`, borderRadius:20, marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+          <div>
+            <div style={{ fontSize:36, marginBottom:8 }}>{pillar.icon}</div>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:24, color:"#fff", margin:"0 0 4px" }}>{pillar.title}</h3>
+            <p style={{ fontSize:14, color: pillar.accent, margin:"0 0 8px" }}>{pillar.subtitle}</p>
+            <p style={{ fontSize:14, color:"rgba(255,255,255,0.55)", margin:0, maxWidth:600, lineHeight:1.6 }}>{pillar.description}</p>
+          </div>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginBottom:8 }}>
+              {claimedCount}/{pillar.tasks.length} 子任务已领取
+            </div>
+            <div style={{ width:120, height:6, borderRadius:3, background:"rgba(255,255,255,0.08)", overflow:"hidden" }}>
+              <div style={{ width:`${(claimedCount / pillar.tasks.length) * 100}%`, height:"100%", borderRadius:3, background:`linear-gradient(90deg, ${pillar.color}, ${pillar.accent})`, transition:"width 0.5s" }} />
+            </div>
+            {isPillarClaimed ? (
+              <div style={{ marginTop:12, fontSize:13, color: pillar.accent }}>
+                👤 {pillarClaim.user} 负责
+              </div>
+            ) : (
+              <button onClick={() => onClaimPillar(pillar.id)}
+                style={{ marginTop:12, padding:"10px 24px", borderRadius:12, border:"none", background:`linear-gradient(135deg, ${pillar.color}, ${pillar.accent})`, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", boxShadow:`0 4px 20px ${pillar.color}40` }}>
+                🏆 领取整个支柱
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {pillar.tasks.map(task => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          pillarColor={pillar.color}
+          pillarAccent={pillar.accent}
+          claims={claims}
+          comments={comments}
+          userName={userName}
+          onClaim={onClaimTask}
+          onAddComment={(tid, text, type) => onAddComment(tid, text, type)}
+          onAddContent={(tid, text, type) => onAddComment(tid, text, type)}
+        />
+      ))}
+    </div>
+  );
+}
+
+
+// ─── Main App ───
+function App() {
+  const [userName, setUserName] = useState(null);
+  const [claims, setClaims] = useState({});
+  const [comments, setComments] = useState([]);
+  const [activeSection, setActiveSection] = useState("hero");
+  const [loaded, setLoaded] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const c = await loadState(STORAGE_KEY, {});
+      const cm = await loadState(COMMENTS_KEY, []);
+      setClaims(c);
+      setComments(cm);
+      setLoaded(true);
+    })();
+  }, []);
+
+  const handleClaim = useCallback(async (id) => {
+    const fresh = await loadState(STORAGE_KEY, {});
+    if (fresh[id]) { setClaims(fresh); alert("该任务已被其他人领取！"); return; }
+    const updated = { ...fresh, [id]: { user: userName, time: Date.now() } };
+    // If claiming a pillar, also claim all its tasks
+    const pillar = PILLARS.find(p => p.id === id);
+    if (pillar) {
+      pillar.tasks.forEach(t => {
+        if (!updated[t.id]) updated[t.id] = { user: userName, time: Date.now() };
+      });
+    }
+    await saveState(STORAGE_KEY, updated);
+    setClaims(updated);
+  }, [userName]);
+
+  const handleAddComment = useCallback(async (taskId, text, type) => {
+    const fresh = await loadState(COMMENTS_KEY, []);
+    const entry = { taskId, user: userName, text, type, time: Date.now() };
+    const updated = [...fresh, entry];
+    await saveState(COMMENTS_KEY, updated);
+    setComments(updated);
+  }, [userName]);
+
+  const sections = ["hero", "exec", "diagnosis", "pillars", "timeline", "template", "kpi", "risks", "summary"];
+  const sectionLabels = ["首页", "摘要", "诊断", "四大支柱", "路线图", "模板", "KPI", "风险", "清单"];
+  const sectionColors = ["#3B82F6", "#3B82F6", "#F59E0B", "#22C55E", "#0F4C81", "#8B5CF6", "#3B82F6", "#EF4444", "#22C55E"];
+
+  if (!loaded) return <div style={{ minHeight:"100vh", background:"#0a0a1a", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff" }}>加载中...</div>;
+
+  return (
+    <div ref={containerRef} style={{ minHeight:"100vh", background:"#0a0a1a", color:"#fff", fontFamily:"'Inter',-apple-system,sans-serif", position:"relative" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+      {!userName && <NameModal onSubmit={setUserName} />}
+
+      {/* Side Nav */}
+      <div style={{ position:"fixed", right:16, top:"50%", transform:"translateY(-50%)", zIndex:100, display:"flex", flexDirection:"column", gap:8 }}>
+        {sections.map((s, i) => (
+          <NavDot key={s} active={activeSection === s} label={sectionLabels[i]} color={sectionColors[i]}
+            onClick={() => { setActiveSection(s); document.getElementById(`section-${s}`)?.scrollIntoView({ behavior:"smooth" }); }}
+          />
+        ))}
+      </div>
+
+      {/* Header Bar */}
+      {userName && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:90, background:"rgba(10,10,26,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"10px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:20 }}>✈️</span>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600 }}>HopeGoo GEO</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:16, fontSize:13 }}>
+            <span style={{ color:"rgba(255,255,255,0.4)" }}>
+              已领取 {Object.keys(claims).length} 个任务
+            </span>
+            <span style={{ padding:"4px 12px", borderRadius:20, background:"rgba(255,255,255,0.08)", color:"#fff" }}>
+              👤 {userName}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div style={{ maxWidth:900, margin:"0 auto", padding:"0 20px" }}>
+
+        {/* HERO */}
+        <section id="section-hero" style={{ minHeight:"100vh", display:"flex", flexDirection:"column", justifyContent:"center", paddingTop:60 }}>
+          <div style={{ fontSize:13, letterSpacing:4, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", marginBottom:16, fontFamily:"'JetBrains Mono',monospace" }}>AI Search Optimization Strategy</div>
+          <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:"clamp(36px,6vw,64px)", lineHeight:1.15, margin:"0 0 16px", background:"linear-gradient(135deg,#fff 0%,#3B82F6 50%,#A78BFA 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            HopeGoo<br/>AI搜索优化战略方案
+          </h1>
+          <p style={{ fontSize:20, color:"rgba(255,255,255,0.5)", margin:"0 0 24px", maxWidth:560, lineHeight:1.6 }}>
+            让ChatGPT、Gemini、Google AI Overview<br/>主动推荐你的品牌
+          </p>
+          <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:40 }}>
+            {["🇺🇸 英语 7词", "🇰🇷 韩语 6词", "🇲🇾 马来语 6词"].map(t => (
+              <span key={t} style={{ padding:"8px 16px", borderRadius:20, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", fontSize:13, color:"rgba(255,255,255,0.6)" }}>{t}</span>
+            ))}
+          </div>
+
+          {/* Questions Ticker */}
+          <div style={{ background:"rgba(255,255,255,0.03)", borderRadius:16, padding:20, border:"1px solid rgba(255,255,255,0.06)", maxHeight:200, overflow:"auto" }}>
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginBottom:12, fontFamily:"'JetBrains Mono',monospace" }}>目标优化提问词 ×19</div>
+            {QUESTIONS.map((q, i) => (
+              <div key={i} style={{ fontSize:13, color:"rgba(255,255,255,0.5)", padding:"4px 0", borderBottom:"1px solid rgba(255,255,255,0.03)" }}>
+                <span style={{ color:"rgba(255,255,255,0.2)", marginRight:8, fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>{String(i+1).padStart(2,"0")}</span>
+                {q}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* EXECUTIVE SUMMARY */}
+        <section id="section-exec" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 24px", color:"#fff" }}>{EXTRA_SECTIONS.executive.title}</h2>
+          <div style={{ fontSize:15, color:"rgba(255,255,255,0.65)", lineHeight:2, whiteSpace:"pre-wrap" }}>
+            {EXTRA_SECTIONS.executive.content.split("**").map((part, i) =>
+              i % 2 === 1 ? <strong key={i} style={{ color:"#F59E0B", background:"rgba(245,158,11,0.1)", padding:"2px 4px", borderRadius:4 }}>{part}</strong> : <span key={i}>{part}</span>
+            )}
+          </div>
+        </section>
+
+        {/* DIAGNOSIS */}
+        <section id="section-diagnosis" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 32px", color:"#fff" }}>{EXTRA_SECTIONS.diagnosis.title}</h2>
+
+          <h3 style={{ fontSize:20, color:"#F59E0B", margin:"0 0 16px" }}>{EXTRA_SECTIONS.diagnosis.subtitle1}</h3>
+          <div style={{ overflowX:"auto", marginBottom:40 }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+              <thead>
+                <tr>
+                  {["问题维度", "当前状态", "影响"].map(h => (
+                    <th key={h} style={{ textAlign:"left", padding:"12px 16px", background:"rgba(245,158,11,0.15)", color:"#F59E0B", fontWeight:600, borderBottom:"1px solid rgba(255,255,255,0.1)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {EXTRA_SECTIONS.diagnosis.table.map((row, i) => (
+                  <tr key={i}>
+                    {row.map((cell, j) => (
+                      <td key={j} style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color: j === 0 ? "#fff" : "rgba(255,255,255,0.6)", fontWeight: j === 0 ? 600 : 400 }}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style={{ fontSize:20, color:"#3B82F6", margin:"0 0 16px" }}>{EXTRA_SECTIONS.diagnosis.subtitle2}</h3>
+          <div style={{ display:"grid", gap:12 }}>
+            {EXTRA_SECTIONS.diagnosis.signals.map(([title, desc], i) => (
+              <div key={i} style={{ display:"flex", gap:12, padding:16, background:"rgba(59,130,246,0.05)", borderRadius:12, border:"1px solid rgba(59,130,246,0.1)" }}>
+                <div style={{ width:32, height:32, borderRadius:8, background:"rgba(59,130,246,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#3B82F6", fontWeight:700, flexShrink:0 }}>{i+1}</div>
+                <div>
+                  <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:2 }}>{title}</div>
+                  <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)" }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* FOUR PILLARS - with task claiming */}
+        <section id="section-pillars" style={{ padding:"80px 0" }}>
+          <div style={{ textAlign:"center", marginBottom:48 }}>
+            <div style={{ fontSize:13, letterSpacing:3, color:"rgba(255,255,255,0.3)", fontFamily:"'JetBrains Mono',monospace", marginBottom:8 }}>CORE STRATEGY</div>
+            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, margin:"0 0 8px", color:"#fff" }}>三、核心战略框架：四大支柱</h2>
+            <p style={{ fontSize:15, color:"rgba(255,255,255,0.4)", margin:0 }}>领取支柱或子任务 → 执行 → 补充内容与反馈</p>
+          </div>
+
+          {/* Overview Cards */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:12, marginBottom:40 }}>
+            {PILLARS.map(p => {
+              const claimed = !!claims[p.id];
+              return (
+                <div key={p.id} style={{ padding:20, background:`linear-gradient(135deg, ${p.color}20, ${p.accent}10)`, border:`1px solid ${p.color}30`, borderRadius:16, textAlign:"center" }}>
+                  <div style={{ fontSize:28, marginBottom:8 }}>{p.icon}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#fff", marginBottom:4 }}>{p.title.replace("支柱","").replace(/[：:].*/,"")}</div>
+                  <div style={{ fontSize:12, color: claimed ? p.accent : "rgba(255,255,255,0.4)" }}>
+                    {claimed ? `✅ ${claims[p.id].user}` : "待领取"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {PILLARS.map(pillar => (
+            <PillarSection
+              key={pillar.id}
+              pillar={pillar}
+              claims={claims}
+              comments={comments}
+              userName={userName}
+              onClaimPillar={handleClaim}
+              onClaimTask={handleClaim}
+              onAddComment={handleAddComment}
+            />
+          ))}
+        </section>
+
+        {/* TIMELINE */}
+        <section id="section-timeline" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 32px", color:"#fff" }}>{EXTRA_SECTIONS.timeline.title}</h2>
+          {EXTRA_SECTIONS.timeline.phases.map((phase, pi) => (
+            <div key={pi} style={{ marginBottom:32, position:"relative", paddingLeft:28 }}>
+              <div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, background:`linear-gradient(180deg, ${phase.color}, transparent)`, borderRadius:2 }} />
+              <div style={{ position:"absolute", left:-5, top:4, width:13, height:13, borderRadius:"50%", background: phase.color, border:"3px solid #0a0a1a" }} />
+              <h3 style={{ fontSize:18, color: phase.color === "#0F4C81" ? "#3B82F6" : phase.color === "#0D6E3F" ? "#22C55E" : "#A78BFA", margin:"0 0 12px" }}>{phase.name}</h3>
+              {phase.steps.map((step, si) => (
+                <div key={si} style={{ fontSize:14, color:"rgba(255,255,255,0.6)", padding:"8px 0", paddingLeft:12, borderLeft:"1px solid rgba(255,255,255,0.05)", marginLeft:4, lineHeight:1.6 }}>
+                  {step}
+                </div>
+              ))}
+            </div>
+          ))}
+        </section>
+
+        {/* TEMPLATE */}
+        <section id="section-template" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 8px", color:"#fff" }}>{EXTRA_SECTIONS.template.title}</h2>
+          <p style={{ fontSize:16, color:"rgba(255,255,255,0.5)", margin:"0 0 32px" }}>{EXTRA_SECTIONS.template.subtitle}</p>
+
+          {EXTRA_SECTIONS.template.items.map((item, i) => (
+            <div key={i} style={{ marginBottom:16, padding:16, background:"rgba(139,92,246,0.06)", borderRadius:12, border:"1px solid rgba(139,92,246,0.15)" }}>
+              <div style={{ fontSize:12, color:"#A78BFA", fontWeight:600, marginBottom:6, fontFamily:"'JetBrains Mono',monospace" }}>{item.label}</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.7)" }}>{item.value}</div>
+            </div>
+          ))}
+
+          <div style={{ marginTop:24, marginBottom:24 }}>
+            <div style={{ fontSize:14, fontWeight:600, color:"#A78BFA", marginBottom:8 }}>开篇段落（前40-60词）：</div>
+            <div style={{ padding:20, background:"rgba(139,92,246,0.08)", borderRadius:12, border:"1px solid rgba(139,92,246,0.2)", fontSize:15, color:"rgba(255,255,255,0.75)", lineHeight:1.8, fontStyle:"italic" }}>
+              {EXTRA_SECTIONS.template.openingParagraph}
+            </div>
+          </div>
+
+          <div style={{ fontSize:16, fontWeight:600, color:"#fff", margin:"32px 0 16px" }}>FAQ模块示例：</div>
+          {EXTRA_SECTIONS.template.faq.map((f, i) => (
+            <div key={i} style={{ marginBottom:16, padding:20, background:"rgba(255,255,255,0.03)", borderRadius:12, border:"1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:8 }}>Q: {f.q}</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.7 }}>A: {f.a}</div>
+            </div>
+          ))}
+        </section>
+
+        {/* KPI */}
+        <section id="section-kpi" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 32px", color:"#fff" }}>{EXTRA_SECTIONS.kpi.title}</h2>
+
+          <div style={{ overflowX:"auto", marginBottom:32 }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+              <thead>
+                <tr>
+                  {["KPI指标", "衡量方法", "目标值", "频率"].map(h => (
+                    <th key={h} style={{ textAlign:"left", padding:"12px 16px", background:"rgba(59,130,246,0.12)", color:"#3B82F6", fontWeight:600, borderBottom:"1px solid rgba(255,255,255,0.1)", whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {EXTRA_SECTIONS.kpi.metrics.map((m, i) => (
+                  <tr key={i}>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"#fff", fontWeight:600, whiteSpace:"nowrap" }}>{m.name}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.6)" }}>{m.method}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"#22C55E", whiteSpace:"nowrap" }}>{m.target}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap" }}>{m.freq}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style={{ fontSize:18, color:"#3B82F6", margin:"0 0 16px" }}>手动审计流程（重要！）</h3>
+          <p style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginBottom:16 }}>每月30日执行以下操作：</p>
+          {EXTRA_SECTIONS.kpi.auditSteps.map((step, i) => (
+            <div key={i} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
+              <div style={{ width:24, height:24, borderRadius:6, background:"rgba(59,130,246,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#3B82F6", fontWeight:700, flexShrink:0 }}>{i+1}</div>
+              <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.6 }}>{step}</div>
+            </div>
+          ))}
+        </section>
+
+        {/* RISKS */}
+        <section id="section-risks" style={{ padding:"80px 0" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 32px", color:"#fff" }}>{EXTRA_SECTIONS.risks.title}</h2>
+          {EXTRA_SECTIONS.risks.items.map((item, i) => (
+            <div key={i} style={{ marginBottom:24, padding:24, background: i === 0 ? "rgba(239,68,68,0.06)" : "rgba(255,255,255,0.03)", borderRadius:16, border: i === 0 ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 style={{ fontSize:18, color: i === 0 ? "#EF4444" : "#fff", margin:"0 0 12px" }}>{item.subtitle}</h3>
+              <p style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.8, margin:"0 0 12px" }}>
+                {item.content.split("**").map((part, j) =>
+                  j % 2 === 1 ? <strong key={j} style={{ color: i === 0 ? "#EF4444" : "#F59E0B" }}>{part}</strong> : <span key={j}>{part}</span>
+                )}
+              </p>
+              {item.actions && (
+                <div style={{ marginTop:12 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:"#EF4444", marginBottom:8 }}>紧急行动：</div>
+                  {item.actions.map((a, ai) => (
+                    <div key={ai} style={{ fontSize:14, color:"rgba(255,255,255,0.6)", padding:"6px 0 6px 16px", borderLeft:"2px solid rgba(239,68,68,0.3)" }}>{a}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+
+        {/* SUMMARY TABLE */}
+        <section id="section-summary" style={{ padding:"80px 0 120px" }}>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, margin:"0 0 32px", color:"#fff" }}>{EXTRA_SECTIONS.summary.title}</h2>
+          <div style={{ overflowX:"auto", marginBottom:40 }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+              <thead>
+                <tr>
+                  {["Step", "行动项", "所属支柱", "时间线"].map(h => (
+                    <th key={h} style={{ textAlign:"left", padding:"12px 16px", background:"rgba(34,197,94,0.12)", color:"#22C55E", fontWeight:600, borderBottom:"1px solid rgba(255,255,255,0.1)", whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {EXTRA_SECTIONS.summary.steps.map((s, i) => (
+                  <tr key={i}>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"#22C55E", fontWeight:700, fontFamily:"'JetBrains Mono',monospace" }}>{s.step}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"#fff" }}>{s.action}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.5)" }}>{s.pillar}</td>
+                    <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", color:"rgba(255,255,255,0.5)", whiteSpace:"nowrap" }}>{s.time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ textAlign:"center", padding:"40px 24px", background:"linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08))", borderRadius:20, border:"1px solid rgba(59,130,246,0.15)" }}>
+            <p style={{ fontFamily:"'Playfair Display',serif", fontSize:22, color:"#fff", margin:"0 0 12px", fontWeight:600 }}>
+              Content is the new backlink. Citation is the new ranking.
+            </p>
+            <p style={{ fontSize:15, color:"rgba(255,255,255,0.45)", margin:0, lineHeight:1.6 }}>
+              当AI成为新的「搜索入口」，被引用就是被搜到。<br/>
+              HopeGoo的目标：从「无人知晓」到「AI主动推荐」。
+            </p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
